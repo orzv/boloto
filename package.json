@@ -1,0 +1,29 @@
+{
+	"name": "boloto",
+	"description": "fast crawler with stream",
+	"version": "0.3",
+	"dependencies": {
+		"cheerio": "^1.0.0-rc.3"
+	},
+	"main": "./boloto.js",
+	"scripts": {
+		"test": "node test"
+	},
+	"keywords": [
+		"crawl",
+		"stream",
+		"dom",
+		"request",
+		"crawler"
+	],
+	"license": "MIT",
+	"author": {
+		"name": "orzv",
+		"email": "orzv@outlook.com",
+		"url": "https://github.com/orzv"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/orzv/boloto"
+	}
+}
