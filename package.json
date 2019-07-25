@@ -1,8 +1,9 @@
 {
 	"name": "boloto",
-	"description": "fast crawler with stream",
-	"version": "0.3",
+	"description": "node.js web crawler",
+	"version": "1.0.0",
 	"dependencies": {
+		"bologet": "^0.2.0",
 		"cheerio": "^1.0.0-rc.3"
 	},
 	"main": "./boloto.js",
@@ -11,10 +12,18 @@
 	},
 	"keywords": [
 		"crawl",
-		"stream",
 		"dom",
 		"request",
-		"crawler"
+		"crawler",
+		"spider",
+		"crawler",
+		"fetch",
+		"cheerio",
+		"html",
+		"jquery",
+		"http",
+		"https",
+		"proxy"
 	],
 	"license": "MIT",
 	"author": {

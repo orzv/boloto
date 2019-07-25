@@ -1,54 +1,113 @@
 # Boloto
 
-高性能、易使用的Node.js爬虫流
+Faster, easier http crawler by Node.js
 
-*此文档尚未完善*
+## Features
 
-## 使用方法
+- Server side dom
+- Fork sub task
+- Concurrency task
+
+## Install
 
 ```shell
+# Recommend
 pnpm i boloto
+
+# or
+yarn add boloto
+
+# or
+npm i boloto
 ```
 
-## 查看测试用例
+## Api
 
-获取github trending
+```javascript
+const boloto = require('boloto')
 
-```shell
-npm run test
+boloto({
+
+    // required, url
+    url: 'https://xxxx',
+
+    // optional, request header
+    headers: {},
+
+    // optional, cookie
+    cookie: [],
+
+    // optional, formData stream will send
+    formData: xxx,
+
+    // optional, Buffer, string or stream
+    data: xxx,
+
+    // optional, default GET
+    method: 'GET',
+
+    // optional, default 10000
+    timeout: 10000,
+
+    // optional, request proxy
+    proxy: 'http://127.0.0.1:1080',
+
+    // optional, concurrency limit, default os.cpus.length
+    concurrency: 10,
+
+    // optional, time for per request, if specific, concurrency set to 1
+    delay: 0,
+
+    // optional, use stream without parse
+    stream: false
+}, 
+
+/**
+ * @param {$ | object | string} data parsed data
+ * @param {string} url which request url
+ * @param {object} response response infos
+ */
+function (data, url, response) {
+    // status code
+    console.log(response.code)
+
+    // headers
+    console.log(response.headers)
+
+    // cookie
+    console.log(response.cookie)
+
+    // Buffer for response
+    console.log(response.buffer.toString())
+
+    // response text
+    console.log(response.data)
+
+    // response stream
+    response.stream.pipe(xxx)
+
+    if (/html/.test(response.headers['content-type'])) {
+        // dom
+        const $ = data
+        $('a').map(function () { return $(this).attr('href') }).get()
+    } else if (/json/.test(response.headers['content-type'])) {
+        // json
+        console.log(JSON.stringify(data))
+    } else {
+        // string
+        data.match(/title/)
+    }
+
+    // return something for next request
+    return 'url'
+
+    // or a url list
+    return ['urls']
+
+    // specific other options
+    return { url: '', headers: {} }
+
+    // or option list
+    return [{ url: '', headers: {} }]
+})
 ```
-
-## 基本功能
-
-- [x] 创建任务
-- [x] 发起请求
-- [x] 解析数据
-- [x] 提取数据
-- [x] 自定义处理方式
-- [x] 子任务
-
-## 增强功能
-
-- [ ] 多线程
-- [ ] 任务队列
-- [ ] daemon
-- [ ] 通用采集规则
-- [ ] 可视化后台
-- [ ] 代理
-
-## 已实现的API
-
-- task
-- boloto
-- end
-- regexp
-- select
-- dom
-- json
-- get
-- then
-- fork
-
-## 其他
-
-本模块还处于开发中，API及流程可能还会变动。
