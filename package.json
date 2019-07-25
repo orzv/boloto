@@ -1,7 +1,7 @@
 {
 	"name": "boloto",
 	"description": "node.js web crawler",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"dependencies": {
 		"bologet": "^0.2.0",
 		"cheerio": "^1.0.0-rc.3"
@@ -16,14 +16,15 @@
 		"request",
 		"crawler",
 		"spider",
-		"crawler",
+		"scrapy",
 		"fetch",
 		"cheerio",
 		"html",
 		"jquery",
 		"http",
 		"https",
-		"proxy"
+		"proxy",
+		"web"
 	],
 	"license": "MIT",
 	"author": {

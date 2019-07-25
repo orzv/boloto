@@ -59,7 +59,10 @@ boloto({
     delay: 0,
 
     // optional, use stream without parse
-    stream: false
+    stream: false,
+
+    // optional, finish all task callback
+    finish: console.log
 }, 
 
 /**

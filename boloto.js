@@ -45,6 +45,15 @@ function boloto(options, callback) {
          * @type {Array}
          */
         let res = callback(data, url, response)
+        if (!res && !options._pusher) {
+            if (typeof options.finish === 'function') {
+                return options.finish()
+            }
+        }
+
+        if (!res && typeof options._finish === 'function') {
+            options._finish()
+        }
         if (!res) return
 
         if (typeof res === 'string') {
@@ -74,7 +83,7 @@ function boloto(options, callback) {
                 }
 
                 boloto(opts, callback)
-            })
+            }, options.finish)
         }
     }, function (err) {
         log(err.message.color(160))
@@ -94,8 +103,9 @@ function defaultOpts(options) {
  * @param {number} concurrency
  * @param {number} delay
  * @param {function} callback 
+ * @param {function} finishall
  */
-function concurrencyLimit(list, concurrency, delay, callback) {
+function concurrencyLimit(list, concurrency, delay, callback, finishall) {
     let count = 0
     let urls = list.map(i => typeof i === 'string' ? i : i.url)
 
@@ -114,6 +124,12 @@ function concurrencyLimit(list, concurrency, delay, callback) {
                 setImmediate(callback, list.splice(0, 1)[0], finish, push)
             }
             count++
+        }
+
+        if (count === 0 && list.length === 0) {
+            if (typeof finishall === 'function') {
+                finishall()
+            }
         }
     }
 
