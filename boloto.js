@@ -44,7 +44,7 @@ function boloto(options, callback) {
         /**
          * @type {Array}
          */
-        let res = callback(data, url, response, options._daemon_log ? { log: options._daemon_log, error: options._daemon_log } : console)
+        let res = callback(data, url, response, options._daemon ? options_daemon : console)
         if (!res && !options._pusher) {
             if (typeof options.finish === 'function') {
                 return options.finish()
