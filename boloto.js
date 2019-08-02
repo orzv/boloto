@@ -31,7 +31,7 @@ function boloto(options, callback) {
     bologet(url, options).then(function (response) {
         let data = null
         if (htmlExp.test(response.headers['content-type'])) {
-            data = cheerio.load(response.data)
+            data = cheerio.load(response.data, { decodeEntities: false })
         } else if (jsonExp.test(response.headers['content-type'])) {
             data = JSON.parse(response.data)
         } else {
@@ -44,7 +44,7 @@ function boloto(options, callback) {
         /**
          * @type {Array}
          */
-        let res = callback(data, url, response, options._daemon ? options._daemon : console)
+        let res = callback(data, url, response)
         if (!res && !options._pusher) {
             if (typeof options.finish === 'function') {
                 return options.finish()
@@ -87,7 +87,7 @@ function boloto(options, callback) {
         }
     }, function (err) {
         log(err.message.color(160))
-        callback(err, url, response, options._daemon_log ? { log: options._daemon_log, error: options._daemon_log } : console)
+        callback(err, url, response)
     })
 }
 

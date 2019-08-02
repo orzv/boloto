@@ -7,21 +7,22 @@ function log(...msg) {
     console.log(str)
 }
 
-boloto({
-    url: 'https://www.pexels.com/search/beautiful%20girl/',
-    finish: function() {
-        console.log('finish'.color(177))
-    },
-    delay: 200,
-    _daemon_log: log
-}, function ($, url, response, console) {
-    let list = $('.photo-item__img').map(function () {
-        return $(this).data('large-src')
-    }).get().map(i => i.match(/^(.*?)\?.*?$/)[1])
+boloto('https://www.ithome.com/', function ($, url) {
+    if (url === 'https://www.ithome.com/') {
+        let result = $('.new-list .title').map(function () {
+            let a = $(this).find('a')
+            return {
+                title: a.text(),
+                url: a.attr('href')
+            }
+        }).get()
 
-    console.log(list)
-
-    if(page++ < 5){
-        return 'https://www.pexels.com/search/beautiful%20girl/?page=' + page
+        let url = result[4].url
+        return url
+    } else {
+        let title = $('h1').eq(0).text()
+        let content = $('.post_content').html()
+        log(title)
+        log(content)
     }
 })
