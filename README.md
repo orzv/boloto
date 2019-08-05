@@ -26,6 +26,16 @@ npm i boloto
 ```javascript
 const boloto = require('boloto')
 
+boloto('http://xx.oo/', function($) {
+    $('a').map(function() {
+        return $(this).attr('href')
+    }).get()
+})
+```
+
+or with options
+
+```javascript
 boloto({
 
     // required, url
@@ -112,5 +122,26 @@ function (data, url, response) {
 
     // or option list
     return [{ url: '', headers: {} }]
+})
+```
+
+or with task queue
+
+```javascript
+const list = [
+    'http://example.com/1.html',
+    'http://example.com/2.html',
+    'http://example.com/3.html',
+    'http://example.com/4.html',
+    'http://example.com/5.html'
+]
+boloto.queue(list, {
+    headers: {},
+    cookie: [],
+    concurrency: 3
+}, function($, url) {
+    if(url === 'xxx') {
+        $('title')
+    }
 })
 ```

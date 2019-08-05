@@ -1,4 +1,5 @@
 const bologet = require('bologet')
+const bolocess = require('bolocess')
 const cheerio = require('cheerio')
 
 const cpus = require('os').cpus().length
@@ -15,27 +16,17 @@ function boloto(options, callback) {
     }
     options = defaultOpts(options)
     callback = typeof callback === 'function' ? callback : console.log
-    let limit = cpus
-    let delay = 0
+    let limit = typeof options.concurrency === 'number' ? options.concurrency : cpus
+    let delay = typeof options.delay === 'number' ? options.delay : 0
     const now = Date.now()
-    if (typeof options.concurrency === 'number') {
-        limit = options.concurrency
-        log('setup concurrency ' + limit)
-    }
-
-    if (typeof options.delay === 'number') {
-        delay = options.delay
-    }
     const { url } = options
 
     bologet(url, options).then(function (response) {
-        let data = null
+        let data = response.data
         if (htmlExp.test(response.headers['content-type'])) {
             data = cheerio.load(response.data, { decodeEntities: false })
         } else if (jsonExp.test(response.headers['content-type'])) {
             data = JSON.parse(response.data)
-        } else {
-            data = response.data
         }
 
 
@@ -45,46 +36,63 @@ function boloto(options, callback) {
          * @type {Array}
          */
         let res = callback(data, url, response)
-        if (!res && !options._pusher) {
-            if (typeof options.finish === 'function') {
-                return options.finish()
-            }
+        if (!res) {
+            return typeof options.finish === 'function' && options.finish()
         }
 
-        if (!res && typeof options._finish === 'function') {
-            options._finish()
-        }
-        if (!res) return
-
-        if (typeof res === 'string') {
+        if (typeof res === 'string' || !res instanceof Array) {
             res = [res]
         }
 
-        if (typeof options._pusher === 'function') {
-            options._pusher(res)
-            options._finish()
-        } else {
-            concurrencyLimit(res, limit, delay, function (data, finish, push) {
-                let opts = {}
-                if (typeof data === 'string') {
-                    opts = Object.assign(options, {
-                        url: data,
-                        headers: Object.assign(options.headers || {}, {
-                            referer: url
-                        }),
-                        cookie: response.cookie,
-                        _pusher: push,
-                        _finish: finish
-                    })
-                } else {
-                    data._pusher = push
-                    data._finish = finish
-                    opts = data
+        const handler = delay ? bolocess.series : bolocess.concurrent
+        const list = res.map(function (item) {
+            if (typeof item === 'string') {
+                return Object.assign({}, options, {
+                    url: item,
+                    cookie: response.cookie,
+                    headers: Object.assign(options.headers || {}, { referer: url })
+                })
+            } else {
+                return Object.assign({
+                    cookie: response.cookie,
+                    headers: Object.assign(options.headers || {}, { referer: url })
+                }, item)
+            }
+        })
+
+        handler(list, function (params, finish) {
+            delete params.delay
+            delete params.concurrency
+            delete params.finish
+
+            boloto(params, function (data, url, response) {
+                let subres = callback(data, url, response)
+                finish()
+
+                function transform(item) {
+                    if (typeof item === 'string') {
+                        return {
+                            url: subres,
+                            headers: Object.assign({ referer: url }, options.headers),
+                            cookie: response.cookie
+                        }
+                    } else {
+                        return Object.assign({
+                            headers: Object.assign({ referer: url }, item.headers || {}),
+                            cookie: response.cookie
+                        }, item)
+                    }
                 }
 
-                boloto(opts, callback)
-            }, options.finish)
-        }
+                if (!subres) return null
+
+                if (subres instanceof Array) {
+                    list = list.concat(subres.map(transform))
+                } else {
+                    list.push(transform(subres))
+                }
+            })
+        }, delay ? delay : limit, typeof options.finish === 'function' ? options.finish : new Function)
     }, function (err) {
         log(err.message.color(160))
         callback(err, url, response)
@@ -98,70 +106,56 @@ function defaultOpts(options) {
     }, options)
 }
 
-/**
- * @param {Array} list 
- * @param {number} concurrency
- * @param {number} delay
- * @param {function} callback 
- * @param {function} finishall
- */
-function concurrencyLimit(list, concurrency, delay, callback, finishall) {
-    let count = 0
-    let urls = list.map(i => typeof i === 'string' ? i : i.url)
-
-    if (delay > 0) {
-        concurrency = 1
-        log(`delay mode, concurrency limit 1`.color(39))
-    }
-
-    function finish() {
-        count--
-
-        if (count < concurrency && list.length) {
-            if (delay) {
-                setTimeout(callback, delay, list.splice(0, 1)[0], finish, push)
-            } else {
-                setImmediate(callback, list.splice(0, 1)[0], finish, push)
-            }
-            count++
-        }
-
-        if (count === 0 && list.length === 0) {
-            if (typeof finishall === 'function') {
-                finishall()
-            }
-        }
-    }
-
-    function push(item) {
-        if (item instanceof Array) {
-            list = list.concat(item.filter(it => !urls.includes(typeof it === 'string' ? it : it.url)))
-            urls = urls.concat(list.map(i => typeof i === 'string' ? i : i.url))
-        } else if (typeof item === 'object' && !urls.includes(item.url)) {
-            list.push(item)
-            urls.push(item.url)
-        } else if (typeof item === 'string' && !urls.includes(item)) {
-            list.push(item)
-            urls.push(item)
-        }
-
-        log(`task forked, total ${urls.length} tasks`.color(129))
-    }
-
-    while (count < concurrency && list.length) {
-        if (delay) {
-            setTimeout(callback, delay, list.splice(0, 1)[0], finish, push)
-        } else {
-            setImmediate(callback, list.splice(0, 1)[0], finish, push)
-        }
-        count++
-    }
-}
-
 function log(...msg) {
     let str = '\x1b[38;5;30m\x1b[1m' + new Date().toJSON() + ' [BOLOTO] : \x1b[0m'
     str += msg.join(' ')
     console.log(str)
 }
+
+function queue(urls, options, callback) {
+    if (!urls instanceof Array) {
+        throw new Error('Invalid urls')
+    }
+    let tasks = urls.map(function (url) {
+        return Object.assign({ url }, options)
+    })
+
+    const handler = typeof options.delay === 'number' ? bolocess.series : bolocess.concurrent
+    handler(tasks, function (task, finish) {
+        delete task.finish
+        delete task.concurrency
+        delete task.delay
+        boloto(task, function (data, url, response) {
+            const result = callback(data, url, response)
+            finish()
+
+            if (!result) return
+
+            function transform(item) {
+                if (typeof item === 'string') {
+                    return {
+                        url: subres,
+                        headers: Object.assign({ referer: url }, options.headers),
+                        cookie: response.cookie
+                    }
+                } else {
+                    return Object.assign({
+                        headers: Object.assign({ referer: url }, item.headers || {}),
+                        cookie: response.cookie
+                    }, item)
+                }
+            }
+
+            if (result instanceof Array) {
+                tasks = tasks.concat(task.map(transform))
+            } else {
+                task.push(transform(result))
+            }
+        })
+    }, typeof options.delay === 'number' ? options.delay : options.concurrency,
+        typeof options.finish === 'function' ? options.finish : new Function)
+}
+
+boloto.queue = queue
 
 module.exports = boloto
