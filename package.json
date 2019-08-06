@@ -1,7 +1,7 @@
 {
 	"name": "boloto",
 	"description": "node.js web crawler",
-	"version": "1.4.2",
+	"version": "1.4.3",
 	"dependencies": {
 		"bolocess": "^1.0.0",
 		"bologet": "^0.2.0",

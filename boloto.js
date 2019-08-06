@@ -40,7 +40,7 @@ function boloto(options, callback) {
             return typeof options.finish === 'function' && options.finish()
         }
 
-        if (typeof res === 'string' || !res instanceof Array) {
+        if (typeof res === 'string' || !(res instanceof Array)) {
             res = [res]
         }
 
@@ -73,7 +73,7 @@ function boloto(options, callback) {
                     if (typeof item === 'string') {
                         return {
                             url: subres,
-                            headers: Object.assign({ referer: url }, options.headers),
+                            headers: Object.assign({ referer: url }, options.headers || {}),
                             cookie: response.cookie
                         }
                     } else {
@@ -95,7 +95,7 @@ function boloto(options, callback) {
         }, delay ? delay : limit, typeof options.finish === 'function' ? options.finish : new Function)
     }, function (err) {
         log(err.message.color(160))
-        callback(err, url, response)
+        callback(err, url)
     })
 }
 
