@@ -1,10 +1,7 @@
 const bologet = require('bologet')
 const bolocess = require('bolocess')
 const cheerio = require('cheerio')
-
-String.prototype.color = function (number) {
-    return `\x1b[0m\x1b[38;5;${number}m${this}\x1b[0m`
-}
+const querystring=require('querystring')
 
 function boloto(options, callback) {
     if (typeof options === 'string') {
@@ -20,15 +17,16 @@ function boloto(options, callback) {
         if (response instanceof Error) {
             return callback(response, url)
         }
+
+        /**
+         * parse data
+         */
         let data = response.data
         if (/text\/html/i.test(response.headers['content-type'])) {
             data = cheerio.load(response.data, { decodeEntities: false })
         } else if (/application\/json/i.test(response.headers['content-type'])) {
             data = JSON.parse(response.data)
         }
-
-
-        console.log(`fetch ${url} `, `used ${Date.now() - now}ms`.color(220))
 
         /**
          * @type {Array}
@@ -140,6 +138,11 @@ function queue(urls, options, callback) {
         typeof options.finish === 'function' ? options.finish : new Function)
 }
 
+function parseHeader(str){
+    return querystring.parse(str, '\n', ': ')
+}
+
 boloto.queue = queue
+boloto.parseHeader = parseHeader
 
 module.exports = boloto
