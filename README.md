@@ -80,7 +80,10 @@ boloto({
  * @param {string} url which request url
  * @param {object} response response infos
  */
-function (data, url, response) {
+function (data, response) {
+    // current url
+    console.log(response.url)
+
     // status code
     console.log(response.code)
 
@@ -139,7 +142,7 @@ boloto.queue(list, {
     headers: {},
     cookie: [],
     concurrency: 3
-}, function($, url) {
+}, function($, { url }) {
     if(url === 'xxx') {
         $('title')
     }
