@@ -109,7 +109,7 @@ function queue(urls, options, callback) {
                 task.push(transform(result))
             }
         })
-    }, options.delay || options.rate, options.finish || new Function)
+    }, options.delay || options.rate || 100, options.finish || new Function)
 }
 
 function watch(options, timer, callback, timezone = 'Asia/Shanghai') {
