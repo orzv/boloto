@@ -1,17 +1,14 @@
 const bologet = require('bologet')
-const bolocess = require('bolocess')
+const { concurrent, series } = require('bolocess')
 const cheerio = require('cheerio')
-const querystring=require('querystring')
+const querystring = require('querystring')
+const { CronJob } = require('cron')
 
 function boloto(options, callback) {
-    if (typeof options === 'string') {
-        options = { url: options }
-    }
-    options = Object.assign({ encoding: 'utf8', timeout: 10000 }, options)
-    callback = typeof callback === 'function' ? callback : console.log
-    let limit = typeof options.concurrency === 'number' ? options.concurrency : require('os').cpus().length
+    options = Object.assign({ encoding: 'utf8', timeout: 10000 }, typeof options === 'string' ? { url: options } : options)
+    callback = typeof callback === 'function' ? callback : new Function
+    let limit = typeof options.rate === 'number' ? options.rate : 100
     let delay = typeof options.delay === 'number' ? options.delay : 0
-    const now = Date.now()
     const { url } = options
     options.callback = function (response) {
         if (response instanceof Error) {
@@ -33,62 +30,48 @@ function boloto(options, callback) {
          */
         let res = callback(data, response)
         if (!res) {
-            return typeof options.finish === 'function' && options.finish()
+            return options.finish && options.finish()
         }
 
         if (typeof res === 'string' || !(res instanceof Array)) {
             res = [res]
         }
 
-        const handler = delay ? bolocess.series : bolocess.concurrent
+        const handler = delay ? series : concurrent
         const list = res.map(function (item) {
             if (typeof item === 'string') {
-                return Object.assign({}, options, {
-                    url: item,
-                    cookie: response.cookie,
-                    headers: Object.assign(options.headers || {}, { referer: url })
-                })
-            } else {
-                return Object.assign({
-                    cookie: response.cookie,
-                    headers: Object.assign(options.headers || {}, { referer: url })
-                }, item)
+                item = { url: item }
             }
+            return Object.assign({
+                cookie: response.cookie,
+                headers: Object.assign(options.headers || {}, { referer: url })
+            }, item)
         })
 
         handler(list, function (params, finish) {
-            delete params.delay
-            delete params.concurrency
-            delete params.finish
-
             boloto(params, function (data, response) {
                 let subres = callback(data, response)
                 finish()
 
-                function transform(item) {
-                    if (typeof item === 'string') {
-                        return {
-                            url: subres,
-                            headers: Object.assign({ referer: url }, options.headers || {}),
-                            cookie: response.cookie
-                        }
-                    } else {
-                        return Object.assign({
-                            headers: Object.assign({ referer: url }, item.headers || {}),
-                            cookie: response.cookie
-                        }, item)
-                    }
-                }
-
                 if (!subres) return null
 
+                function transform(item) {
+                    if (typeof item === 'string') {
+                        item = { url: subres }
+                    }
+                    return Object.assign({
+                        headers: Object.assign({ referer: url }, item.headers || {}),
+                        cookie: response.cookie
+                    }, item)
+                }
+
                 if (subres instanceof Array) {
-                    list = list.concat(subres.map(transform))
+                    list.push(...subres.map(transform))
                 } else {
                     list.push(transform(subres))
                 }
             })
-        }, delay ? delay : limit, typeof options.finish === 'function' ? options.finish : new Function)
+        }, delay || limit, options.finish || new Function)
     }
 
     bologet(url, options)
@@ -102,11 +85,8 @@ function queue(urls, options, callback) {
         return Object.assign({ url }, options)
     })
 
-    const handler = typeof options.delay === 'number' ? bolocess.series : bolocess.concurrent
+    const handler = options.delay ? series : concurrent
     handler(tasks, function (task, finish) {
-        delete task.finish
-        delete task.concurrency
-        delete task.delay
         boloto(task, function (data, response) {
             const result = callback(data, response)
             finish()
@@ -115,34 +95,47 @@ function queue(urls, options, callback) {
 
             function transform(item) {
                 if (typeof item === 'string') {
-                    return {
-                        url: subres,
-                        headers: Object.assign({ referer: url }, options.headers),
-                        cookie: response.cookie
-                    }
-                } else {
-                    return Object.assign({
-                        headers: Object.assign({ referer: url }, item.headers || {}),
-                        cookie: response.cookie
-                    }, item)
+                    item = { url: subres }
                 }
+                return Object.assign({
+                    headers: Object.assign({ referer: url }, item.headers || {}),
+                    cookie: response.cookie
+                }, item)
             }
 
             if (result instanceof Array) {
-                tasks = tasks.concat(task.map(transform))
+                tasks.push(...task.map(transform))
             } else {
                 task.push(transform(result))
             }
         })
-    }, typeof options.delay === 'number' ? options.delay : options.concurrency,
-        typeof options.finish === 'function' ? options.finish : new Function)
+    }, options.delay || options.rate, options.finish || new Function)
 }
 
-function parseHeader(str){
-    return querystring.parse(str, '\n', ': ')
+function watch(options, timer, callback, timezone = 'Asia/Shanghai') {
+    if (typeof timer === 'number') {
+        let tm = setInterval(function () {
+            boloto(options, function (...args) {
+                return callback(...args, function () {
+                    clearInterval(tm)
+                })
+            })
+        }, timer)
+    } else if (typeof timer === 'string') {
+        let tm = new CronJob(timer, function () {
+            boloto(options, function (...args) {
+                return callback(...args, function () {
+                    tm.stop()
+                })
+            })
+        }, null, true, timezone, true)
+        tm.start()
+    } else {
+        throw new Error('Invalid timer')
+    }
 }
 
 boloto.queue = queue
-boloto.parseHeader = parseHeader
+boloto.watch = watch
 
 module.exports = boloto

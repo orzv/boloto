@@ -1,11 +1,12 @@
 {
 	"name": "boloto",
 	"description": "node.js web crawler",
-	"version": "1.6.3",
+	"version": "1.7.3",
 	"dependencies": {
-		"bolocess": "^1.0.2",
-		"bologet": "^0.3.2",
-		"cheerio": "^1.0.0-rc.3"
+		"bolocess": "^1.1.2",
+		"bologet": "^1.0.2",
+		"cheerio": "^1.0.0-rc.3",
+		"cron": "^1.7.1"
 	},
 	"main": "./boloto.js",
 	"scripts": {

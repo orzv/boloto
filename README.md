@@ -62,8 +62,8 @@ boloto({
     // optional, request proxy
     proxy: 'http://127.0.0.1:1080',
 
-    // optional, concurrency limit, default os.cpus.length
-    concurrency: 10,
+    // optional, concurrency rate limit, default 100
+    rate: 10,
 
     // optional, time for per request, if specific, concurrency set to 1
     delay: 0,
@@ -147,18 +147,4 @@ boloto.queue(list, {
         $('title')
     }
 })
-```
-
-quick to parse headers from browser
-
-```javascript
-boloto.parseHeader(`Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3
-Accept-Encoding: gzip, deflate
-Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
-Cache-Control: no-cache
-Connection: keep-alive
-DNT: 1
-Pragma: no-cache
-Upgrade-Insecure-Requests: 1
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.142 Safari/537.36`)
 ```
