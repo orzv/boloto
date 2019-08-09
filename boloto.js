@@ -51,13 +51,15 @@ function boloto(options, callback) {
         handler(list, function (params, finish) {
             boloto(params, function (data, response) {
                 let subres = callback(data, response)
-                finish()
 
-                if (!subres) return null
+                if (!subres) {
+                    finish()
+                    return null
+                }
 
                 function transform(item) {
                     if (typeof item === 'string') {
-                        item = { url: subres }
+                        item = { url: item }
                     }
                     return Object.assign({
                         headers: Object.assign({ referer: url }, item.headers || {}),
@@ -70,6 +72,8 @@ function boloto(options, callback) {
                 } else {
                     list.push(transform(subres))
                 }
+
+                finish()
             })
         }, delay || limit, options.finish || new Function)
     }
@@ -95,7 +99,7 @@ function queue(urls, options, callback) {
 
             function transform(item) {
                 if (typeof item === 'string') {
-                    item = { url: subres }
+                    item = { url: item }
                 }
                 return Object.assign({
                     headers: Object.assign({ referer: url }, item.headers || {}),
@@ -104,9 +108,9 @@ function queue(urls, options, callback) {
             }
 
             if (result instanceof Array) {
-                tasks.push(...task.map(transform))
+                tasks.push(...result.map(transform))
             } else {
-                task.push(transform(result))
+                tasks.push(transform(result))
             }
         })
     }, options.delay || options.rate || 100, options.finish || new Function)
