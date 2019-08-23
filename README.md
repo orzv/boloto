@@ -2,149 +2,168 @@
 
 Faster, easier http crawler by Node.js
 
+**v2 was rebuild which whole different from v1**
+
 ## Features
 
 - Server side dom
 - Fork sub task
-- Concurrency task
+- Rate limiter
+- Task watcher
 
 ## Install
 
 ```shell
-# Recommend
-pnpm i boloto
-
-# or
-yarn add boloto
-
-# or
 npm i boloto
 ```
 
-## Api
+## Usage
 
 ```javascript
 const boloto = require('boloto')
 
-boloto('http://xx.oo/', function($) {
-    $('a').map(function() {
+async function start() {
+    let res = await boloto('http://xxx.ooo/')
+
+    // or special referer
+    let res2 = await boloto('http://example.com/', 'http://xxx.ooo/')
+    let $ = await res.html()
+    return $('a').map(function() {
         return $(this).attr('href')
-    }).get()
-})
+    })
+}
 ```
 
-or with options
+### Save file
 
 ```javascript
-boloto({
+let res = await boloto('http://xxx.ooo/picture.jpg')
+await res.save('./test.jpg')
+```
 
-    // required, url
-    url: 'https://xxxx',
+### Response infos
 
-    // optional, request header
-    headers: {},
+```javascript
+let res = await boloto('http://xxx.ooo/')
 
-    // optional, cookie
-    cookie: [],
+// get header
+res.headers.get('content-type')
 
-    // optional, formData stream will send
-    formData: xxx,
+// raw headers
+res.headers.raw()
 
-    // optional, Buffer, string or stream
-    data: xxx,
+// cookie
+res.cookie()
 
-    // optional, default GET
+// status code
+res.status
+
+// string
+await res.text()
+
+// dom
+await res.html()
+
+// buffer
+await res.buffer()
+
+// json
+await res.json()
+
+// stream
+await res.body
+```
+
+### Request with proxy
+
+```javascript
+const agent = boloto.proxy('http://127.0.0.1:1080')
+
+await boloto('url', { agent })
+```
+
+### Request options
+
+```javascript
+await boloto('url', {
+    // request method, default GET
     method: 'GET',
 
-    // optional, default 10000
+    // headers
+    headers: {
+        'User-Agent': 'Boloto/2'
+    },
+
+    // compress, default true
+    compress: true,
+
+    // data will send
+    body: null,
+
+    // redirect limit, defaults 0
+    redirect: 3,
+
+    // request timeout, defaults 10000
     timeout: 10000,
 
-    // optional, request proxy
-    proxy: 'http://127.0.0.1:1080',
+    // agent
+    agent: boloto.proxy('https://127.0.0.1:1080'),
 
-    // optional, concurrency rate limit, default 100
-    rate: 10,
+    // concurrency limit
+    limit: 3,
 
-    // optional, time for per request, if specific, concurrency set to 1
-    delay: 0,
+    // request delay
+    delay: 1000,
 
-    // optional, use stream without parse
-    stream: false,
+    // cookie,
+    cookie: { session: '1' },
 
-    // optional, finish all task callback
-    finish: console.log
-}, 
-
-/**
- * @param {$ | object | string} data parsed data
- * @param {string} url which request url
- * @param {object} response response infos
- */
-function (data, response) {
-    // current url
-    console.log(response.url)
-
-    // status code
-    console.log(response.code)
-
-    // headers
-    console.log(response.headers)
-
-    // cookie
-    console.log(response.cookie)
-
-    // Buffer for response
-    console.log(response.buffer.toString())
-
-    // response text
-    console.log(response.data)
-
-    // response stream
-    response.stream.pipe(xxx)
-
-    if (/html/.test(response.headers['content-type'])) {
-        // dom
-        const $ = data
-        $('a').map(function () { return $(this).attr('href') }).get()
-    } else if (/json/.test(response.headers['content-type'])) {
-        // json
-        console.log(JSON.stringify(data))
-    } else {
-        // string
-        data.match(/title/)
-    }
-
-    // return something for next request
-    return 'url'
-
-    // or a url list
-    return ['urls']
-
-    // specific other options
-    return { url: '', headers: {} }
-
-    // or option list
-    return [{ url: '', headers: {} }]
+    // referer
+    referer: 'http://from.url/'
 })
 ```
 
-or with task queue
+### Task queue
 
 ```javascript
-const list = [
-    'http://example.com/1.html',
-    'http://example.com/2.html',
-    'http://example.com/3.html',
-    'http://example.com/4.html',
-    'http://example.com/5.html'
-]
-boloto.queue(list, {
-    headers: {},
-    cookie: [],
-    concurrency: 3
-}, function($, { url }) {
-    if(url === 'xxx') {
-        $('title')
-    }
+boloto.queue(['url1', 'url2'], {
+    // limit rate per seconds, if special delay, it will be set to 1
+    limit: 3,
+
+    // or delay for next request
+    delay: 3000
+}).on('data', function(res) {
+    console.log(res.url)
+    await res.html()
+}).on('end', function() {
+    console.log('finished')
 })
+```
+
+
+### Watch
+
+```javascript
+// interval
+boloto.watch('url', 2000, options).on('data', function(res, stop) {
+    console.log(res.url)
+
+    // you can stop interval
+    stop()
+})
+
+// cron
+boloto.watch('url', '0 */10 * * * *', options).on('data', function(res, stop) {
+    console.log(res.url)
+
+    // you can stop interval
+    stop()
+})
+```
+
+
+### Save all files
+
+```javascript
+await boloto.saveAll([...urls], '/path/to/save', options)
 ```
