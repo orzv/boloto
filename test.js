@@ -1,11 +1,14 @@
 const boloto = require('./boloto')
 
 async function fetchJandanTops() {
-    let res = await boloto('https://jandan.net/top')
-    let $ = await res.html()
-    let list = $('.view_img_link').map((i, e) => 'https:' + $(e).attr('href')).get()
-    await boloto.saveAll(list, './jandan')
-    console.log(`save ${list.length} files`)
+    boloto.queue([
+        'https://www.baidu.com/',
+        'https://www.qq.com/'
+    ]).on('data', function (res) {
+        console.log(res.url)
+    }).on('end', function () {
+        console.log('ok')
+    })
 }
 
 fetchJandanTops()

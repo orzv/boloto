@@ -104,10 +104,8 @@ function queue(urls, opts = {}) {
             if (urls.length === 0) {
                 return ev.emit('end')
             }
-            concurrency++
             let url = urls.shift()
             function _callback(r) {
-                concurrency--
                 if (!r.url) r.url = url
                 ev.emit('data', r)
                 setTimeout(allocTask, opts.delay)
@@ -138,18 +136,19 @@ function queue(urls, opts = {}) {
         allocTask()
     } else {
         // no limit
-        concurrency += urls.length
-        urls.forEach(function (url) {
+        while (urls.length) {
+            let url = urls.shift()
+            concurrency++
             function _callback(r) {
                 concurrency--
                 if (!r.url) r.url = url
                 ev.emit('data', r)
-                if (concurrency === 0 && urls.length === 0) {
+                if (urls.length === 0 && concurrency === 0) {
                     ev.emit('end')
                 }
             }
             fetch(url, opts).then(_callback, _callback)
-        })
+        }
     }
     return ev
 }
